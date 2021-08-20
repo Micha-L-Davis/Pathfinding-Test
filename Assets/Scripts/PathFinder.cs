@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -131,6 +132,8 @@ namespace PathAI
             public DelegatePathFinderNode onAddToClosedList;
             public DelegatePathFinderNode onDestinationFound;
 
+            public Action<Node<T>> onCellTraversal;
+
             public delegate void DelegateNoArgument();
             public DelegateNoArgument onStarted;
             public DelegateNoArgument onRunning;
@@ -191,10 +194,16 @@ namespace PathAI
                 }
 
                 // Get least-cost element from open list and make that the new current node
+                //add the least cost node to a list
+                //on cell traversal 
+                
                 CurrentNode = GetLeastCostNode(_openList);
+                onCellTraversal?.Invoke(CurrentNode.Location);
+                
 
                 // Inform delegate subscribers that the current node has changed
                 onChangeCurrentNode?.Invoke(CurrentNode);
+                onCellTraversal?.Invoke(CurrentNode.Location);
 
                 //Remove the node from the open list
                 _openList.Remove(CurrentNode);
@@ -248,7 +257,7 @@ namespace PathAI
         {
             protected override void AlgorithmSpecificImplementation(Node<T> cell)
             {
-                //check if node is already closed
+                // Check if cell is already closed
                 if (IsInList(_closedList, cell.Value) == -1)
                 {
                     // Cell is not closed

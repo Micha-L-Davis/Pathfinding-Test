@@ -8,9 +8,14 @@ public class GridCellVisualizer : MonoBehaviour
     [SerializeField]
     private SpriteRenderer _interiorSprite;
 
+    public Color Color => _interiorSprite.color;
+
     public GridCellData gridCellData;
 
     //create methods for setting the color of the interior sprite
-    public void SetInteriorColor(Color color) => _interiorSprite.color = color;
-
+    public void SetInteriorColor(Color color)
+    {
+        Debug.Log(name + " is changing to " + color);
+        _interiorSprite.color = color;
+    }
 }

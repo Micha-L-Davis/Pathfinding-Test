@@ -20,6 +20,9 @@ public class GridVisualizer : MonoBehaviour
     protected Vector2Int[,] _indices;
     // 2D array of the GridCell
     protected GridCellData[,] _gridCellsData;
+    // Queue for shortest path
+    public Queue<Vector2> pathPoints = new Queue<Vector2>();
+
     // Cell colors
     [SerializeField]
     Color _openColor;
@@ -37,6 +40,7 @@ public class GridVisualizer : MonoBehaviour
     // Declare variables for start and end cells
     private GridCellVisualizer _startingCell;
     private GridCellVisualizer _endingCell;
+    private bool _pathCompleted;
 
     // Declare a Pathfinder
     private PathFinder<Vector2Int> _pathFinder = new AStarPathfinder<Vector2Int>();
@@ -47,10 +51,14 @@ public class GridVisualizer : MonoBehaviour
     private void Start()
     {
         CacheReferenceVariables();
+        _pathFinder.onStarted = ResetCellColor;
+        _pathFinder.onCellTraversal = VisualizeTraversal;
         _pathFinder.onSuccess = OnSuccessPathFinding;
         _pathFinder.onFailure = OnFailurePathFinding;
-        _pathFinder.HeuristicCost = GetEuclideanCost;
+
+        _pathFinder.HeuristicCost = GetHeuristicCost;
         _pathFinder.NodeTraversalCost = GetEuclideanCost;
+    
 
 
         ConstructGrid(_maxColumns, _maxRows);
@@ -68,6 +76,10 @@ public class GridVisualizer : MonoBehaviour
         {
             RightClickCell();
         }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
     }
 
     private void ClickCell()
@@ -82,6 +94,12 @@ public class GridVisualizer : MonoBehaviour
             {
                 ToggleWalkable(selectedCell);
             }
+        }
+        if (_startingCell != null && _endingCell != null)
+        {
+            _pathCompleted = false;
+            _pathFinder.Initialize(_startingCell.gridCellData, _endingCell.gridCellData);
+            StartCoroutine(PathStepRoutine());
         }
     }
 
@@ -98,9 +116,13 @@ public class GridVisualizer : MonoBehaviour
                 StartAndEndPoint(selectedCell);
             }
         }
+        if (_startingCell != null && _endingCell != null)
+        {
+            _pathCompleted = false;
+            _pathFinder.Initialize(_startingCell.gridCellData, _endingCell.gridCellData);
+            StartCoroutine(PathStepRoutine());
+        }
     }
-
-    
 
     private void ToggleWalkable(GridCellVisualizer selectedCell)
     {
@@ -171,14 +193,52 @@ public class GridVisualizer : MonoBehaviour
         }
     }
 
+    private void ResetCellColor()
+    {
+        foreach (var cell in _gridCellGameObjects)
+        {
+            GridCellVisualizer gcv = cell.GetComponent<GridCellVisualizer>();
+            if (
+                gcv.Color != _wallColor && 
+                gcv.Color != _startColor && 
+                gcv.Color != _endColor)
+            {
+                Debug.Log(cell.name + "is not a wall, not the start and not the end");
+                gcv.SetInteriorColor(_openColor);
+            }
+        }
+    }
+
+    private IEnumerator PathStepRoutine()
+    {
+        while (!_pathCompleted)
+        {
+            _pathFinder.Step();
+        }
+        yield break;
+    }
+    public void VisualizeTraversal(Node<Vector2Int> node)
+    {
+        int x = node.Value.x;
+        int y = node.Value.y;
+
+        GridCellVisualizer gcv = _gridCellGameObjects[x, y].GetComponent<GridCellVisualizer>();
+        if (gcv != null && gcv != _startingCell && gcv !=_endingCell)
+        {
+            gcv.SetInteriorColor(_pathColor);
+        }
+    }
+
     private void OnSuccessPathFinding()
     {
         Debug.Log("Valid path solution found!");
+        _pathCompleted = true;
     }
 
     private void OnFailurePathFinding()
     {
         Debug.Log("Cannot find a valid path");
+        _pathCompleted = true;
     }
 
     private void CacheReferenceVariables()
@@ -189,6 +249,7 @@ public class GridVisualizer : MonoBehaviour
         {
             Debug.LogError("Main Camera is null!");
         }
+        
     }
 
     protected void ConstructGrid(int maxColumns, int maxRows)
@@ -234,6 +295,7 @@ public class GridVisualizer : MonoBehaviour
         _camera.transform.position = new Vector3(_maxColumns / 2.0f - 0.5f, _maxRows / 2.0f - 0.5f, -100.0f);
     }
 
+    // Called from Grid Cell Data
     public List<Node<Vector2Int>> GetNeighborCells(Node<Vector2Int> location)
     {
         List<Node<Vector2Int>> neighbors = new List<Node<Vector2Int>>();
@@ -241,15 +303,20 @@ public class GridVisualizer : MonoBehaviour
         int x = location.Value.x;
         int y = location.Value.y;
 
+
+
         // Check north
         if (y < _maxRows - 1)
         {
             int i = x;
             int j = y + 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
-                //change the neighbor's color
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -260,8 +327,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x + 1;
             int j = y + 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -272,8 +343,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x + 1;
             int j = y;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -284,8 +359,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x + 1;
             int j = y - 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -296,8 +375,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x;
             int j = y - 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -308,8 +391,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x - 1;
             int j = y - 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -322,8 +409,12 @@ public class GridVisualizer : MonoBehaviour
 
             Vector2Int v = _indices[i, j];
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -334,8 +425,12 @@ public class GridVisualizer : MonoBehaviour
             int i = x - 1;
             int j = y + 1;
 
-            if (_gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End)
+            if (
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Open || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.End || 
+                _gridCellsData[i, j].CurrentStatus == GridCellData.CellStatus.Start)
             {
+                VisitNeighbor(i, j);
                 neighbors.Add(_gridCellsData[i, j]);
             }
         }
@@ -343,9 +438,34 @@ public class GridVisualizer : MonoBehaviour
         return neighbors;
     }
 
-    public static float GetManhattanCost(Vector2Int a, Vector2Int b)
+    private void VisitNeighbor(int i, int j)
     {
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+        GridCellVisualizer gcv = _gridCellGameObjects[i, j].GetComponent<GridCellVisualizer>();
+        if (gcv != null)
+        {
+            Debug.Log("Visiting neighbor at " + i + ", " + j);
+            if (gcv.Color != _pathColor && gcv.Color != _startColor && gcv.Color != _endColor)
+            {
+                gcv.SetInteriorColor(_visitedColor);
+            }
+        }
+    }
+
+    //public static float GetManhattanCost(Vector2Int a, Vector2Int b)
+    //{
+    //    return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    //}
+
+    public static float GetHeuristicCost(Vector2Int a, Vector2Int b)
+    {
+        var deltaX = Mathf.Abs(a.x - b.x);
+        var deltaY = Mathf.Abs(a.y - b.y);
+
+        if (deltaX > deltaY)
+        {
+            return 14 * deltaY + 10 * (deltaX - deltaY);
+        }
+        return 14 * deltaY + 10 * (deltaY - deltaX);
     }
 
     public static float GetEuclideanCost(Vector2Int a, Vector2Int b)
