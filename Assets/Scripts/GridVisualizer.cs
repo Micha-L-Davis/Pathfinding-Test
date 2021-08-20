@@ -180,11 +180,13 @@ public class GridVisualizer : MonoBehaviour
                 break;
             case GridCellData.CellStatus.Start:
                 _startingCell = null;
+                ResetCellColor();
                 selectedCell.gridCellData.CurrentStatus = GridCellData.CellStatus.Open;
                 selectedCell.SetInteriorColor(_openColor);
                 break;
             case GridCellData.CellStatus.End:
                 _endingCell = null;
+                ResetCellColor();
                 selectedCell.gridCellData.CurrentStatus = GridCellData.CellStatus.Open;
                 selectedCell.SetInteriorColor(_openColor);
                 break;
