@@ -118,6 +118,8 @@ NavMeshSettings:
     manualTileSize: 0
     tileSize: 256
     accuratePlacement: 0
+    maxJobWorkers: 0
+    preserveTilesOutsideBounds: 0
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
@@ -203,4 +205,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1600774324
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1600774326}
+  - component: {fileID: 1600774325}
+  m_Layer: 0
+  m_Name: Grid_Visualizer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1600774325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600774324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ed8b6805a728d6459fe469465fb0bcf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _maxColumns: 9
+  _maxRows: 14
+  _gridCellPrefab: {fileID: 7089055563121940771, guid: 1c34f8f7408e48a4faba76ff7a935888, type: 3}
+  _openColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  _wallColor: {r: 0.7075472, g: 0.050062295, b: 0.050062295, a: 1}
+  _startColor: {r: 0.13041398, g: 0.6509434, b: 0.06448024, a: 1}
+  _pathColor: {r: 0.52156866, g: 0.70032716, b: 0.8862745, a: 1}
+  _visitedColor: {r: 0.6022664, g: 1, b: 0.5518868, a: 0}
+  _endColor: {r: 0, g: 0.055948652, b: 0.8490566, a: 1}
+--- !u!4 &1600774326
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600774324}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.13369462, y: -0.17788684, z: -5.7135687}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
