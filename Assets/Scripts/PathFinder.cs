@@ -198,7 +198,7 @@ namespace PathAI
                 //on cell traversal 
                 
                 CurrentNode = GetLeastCostNode(_openList);
-                onCellTraversal?.Invoke(CurrentNode.Location);
+
                 
 
                 // Inform delegate subscribers that the current node has changed
